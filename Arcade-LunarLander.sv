@@ -74,7 +74,7 @@ localparam CONF_STR = {
 //	"O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",  
 	"O7,Test,Off,On;", 
-	"O89,Language,English,French,Spanish,German;",
+	"O89,Language,English,Spanish,French,German;",
 	"OAC,Fuel,450,600,750,900,1100,1300,1550,1800;",
 	"-;",
 	"R0,Reset;",
@@ -83,7 +83,8 @@ localparam CONF_STR = {
 };
 // 00010000
 // on is 0
-wire [7:0] m_dip = {~status[12:11],1'b1,~status[10],~status[9:8],1'b0,1'b0};
+//wire [7:0] m_dip = {~status[12:11],1'b1,~status[10],~status[9:8],1'b0,1'b0};
+wire [7:0] m_dip = {1'b0,1'b0,status[8],status[9],~status[10],1'b1,status[11],status[12]};
 //wire [7:0] m_dip = 8'b00010000;
 
 ////////////////////   CLOCKS   ///////////////////
