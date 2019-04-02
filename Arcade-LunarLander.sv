@@ -74,11 +74,17 @@ localparam CONF_STR = {
 //	"O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",  
 	"O7,Test,Off,On;", 
+	"O89,Language,English,French,Spanish,German;",
+	"OAC,Fuel,450,600,750,900,1100,1300,1550,1800;",
 	"-;",
 	"R0,Reset;",
 	"J1,Fire,Thrust,Hyperspace,Start;",	
-	"V,v2.00.",`BUILD_DATE
+	"V,v",`BUILD_DATE
 };
+// 00010000
+// on is 0
+wire [7:0] m_dip = {~status[12:11],1'b1,~status[10],~status[9:8],1'b0,1'b0};
+//wire [7:0] m_dip = 8'b00010000;
 
 ////////////////////   CLOCKS   ///////////////////
 
@@ -259,7 +265,7 @@ ASTEROIDS_TOP ASTEROIDS_TOP
 	.VGA_DE(vgade),
 	.VID_HBLANK(hblank),
 	.VID_VBLANK(vblank),
-
+	.DIP(m_dip),
 	.RESET_L (~reset),	
 	.clk_6(clk_6),
 	.clk_25(clk_25)

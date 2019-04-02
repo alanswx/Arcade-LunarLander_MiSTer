@@ -71,6 +71,8 @@ library ieee;
 	 --PROG_ROM_ADDR		 : out std_logic_vector(12 downto 0);
 	 --PROG_ROM_DATA		 : in	std_logic_vector(7 downto 0);
 	 --
+	DIP					: in std_logic_vector(7 downto 0);
+
     RESET_6_L         : in    std_logic;
     CLK_6             : in    std_logic;
 	 CLK_25            : in    std_logic;
@@ -91,6 +93,8 @@ architecture RTL of ASTEROIDS is
   signal ena_12K              : std_ulogic;
   signal ena_3K               : std_ulogic;
   signal clk_3K               : std_ulogic;
+  signal ena_6K  					: std_ulogic;
+  signal clk_6K					: std_ulogic;
 
   -- cpu
   signal c_addr               : std_logic_vector(23 downto 0);
@@ -148,6 +152,12 @@ architecture RTL of ASTEROIDS is
   signal control_ip1_sel      : std_logic;
 
   -- sound
+  signal aud						: std_logic_vector(5 downto 0);
+  signal tone3khz					: std_logic_vector(3 downto 0);
+  signal tone6khz					: std_logic_vector(3 downto 0);
+
+  signal t_e_vol               : std_logic_vector(2 downto 0);
+
   signal noise_shift          : std_logic_vector(15 downto 0);
   signal noise                : std_logic;
   signal shpsnd               : std_logic_vector(3 downto 0);
@@ -252,6 +262,11 @@ rom_v_cs <= '1' when dn_addr(13) = '1'     else '0';
     if (ena_count(8 downto 0) = "000000000") then
       ena_12k <= '1';
     end if;
+	 ena_6k <= '0';
+	 if (ena_count(9 downto 0) = "000000000") then
+		ena_6k <= '1';
+	 end if;
+	 clk_6k <= ena_count(9);
 
     ena_3k <= '0';
     if (ena_count(10 downto 0) ="00000000000") then
@@ -407,32 +422,43 @@ rom_v_cs <= '1' when dn_addr(13) = '1'     else '0';
     noiserst_l   <= decc(7);
   end process;
 
-  p_output_registers : process(RESET_L, CLK_6)
+  
+  -- Output register for audio control
+-- 
+  p_output_registers : process(audio_l)
   begin
-    if (reset_l = '0') then
-      saucrsnden <= '0';
-      saucrfireen <= '0';
-		saucrsel_l <= '1'; -- inverted
-      shipthrusten <= '0';
-      shpfireen <= '0';
-		lifeen <= '0';
-
-    elsif rising_edge(CLK_6) then
-      if (ena_1_5M = '1') and (audio_l = '0') then
-        case c_addr(2 downto 0) is
-          when "000" => saucrsnden <= c_dout(7);
-          when "001" => saucrfireen <= c_dout(7);
-          when "010" => saucrsel_l <= (not c_dout(7));
-          when "011" => shipthrusten <= c_dout(7);
-          when "100" => shpfireen <= c_dout(7);
-          when "101" => lifeen <= c_dout(7);
-          when "110" => null;
-          when "111" => null;
-          when others => null;
-        end case;
-      end if;
+    if rising_edge(audio_l) then
+		aud <= c_dout(5 downto 0);   
     end if;
   end process;
+
+  
+--  p_output_registers : process(RESET_L, CLK_6)
+--  begin
+--    if (reset_l = '0') then
+--      saucrsnden <= '0';
+--      saucrfireen <= '0';
+--		saucrsel_l <= '1'; -- inverted
+--      shipthrusten <= '0';
+--      shpfireen <= '0';
+--		lifeen <= '0';
+--
+--    elsif rising_edge(CLK_6) then
+--      if (ena_1_5M = '1') and (audio_l = '0') then
+--        case c_addr(2 downto 0) is
+--          when "000" => saucrsnden <= c_dout(7);
+--          when "001" => saucrfireen <= c_dout(7);
+--          when "010" => saucrsel_l <= (not c_dout(7));
+--          when "011" => shipthrusten <= c_dout(7);
+--          when "100" => shpfireen <= c_dout(7);
+--          when "101" => lifeen <= c_dout(7);
+--          when "110" => null;
+--          when "111" => null;
+--          when others => null;
+--        end case;
+--      end if;
+--    end if;
+--  end process;
 
 
 -- Output register for ramsel_l and lamp, LED and coin counter output
@@ -456,7 +482,7 @@ rom_v_cs <= '1' when dn_addr(13) = '1'     else '0';
     wait until rising_edge(CLK_6);
     -- off is 1, on is 0
     --            12345678
-    dips_p6_l <= "00010000"; -- default
+    dips_p6_l <= DIP;--"00010000"; -- default
 
     -- self test, slam, diag step, fire, hyper
     control_ip0_l <= "11111";
@@ -670,158 +696,17 @@ port map
   -- audio
   --
 
-
+  -- Thrust Aud0 through Aud 2 - volume
+  -- Explosion - Aud 3,  volume by Aud 0 through Aud 2
+  -- 3k - Aud 4
+  -- 6k - Aud 5
   
--- Saucer sound parameters for large and small saucers are selected by saucrsel_l
-PitchBendTerm <= 252 when saucrsel_l = '0' else 186;
-PitchBendMult <= 12 when saucrsel_l = '0' else 8;
-
--- Generate a sawtooth wave to bend the pitch of the saucer oscillator
-Warble: process(clk_6, clk_3k, saucrsnden)
-begin
-if saucrsnden = '0' then
-		pitch_rising <= '1';
-	elsif rising_edge(clk_3k) then
-				if pitch_rising = '1' then
-					Pitch_bend <= pitch_bend + 1;
-				else	
-					Pitch_bend <= Pitch_bend - 1;
-				end if;
-				if Pitch_bend > PitchBendTerm then	
-					pitch_rising <= '0';
-				end if;
-				if pitch_bend = 1 then
-					pitch_rising <= '1';
-				end if;
-	end if;
-end process;
-
--- Variable frequency oscillator to generate the saucer sounds
--- saucer_ramp_term terminates the ramp count, the higher this value, the longer the ramp will count up and the lower
--- the frequency..
-saucer_ramp_term <= 1700 when saucrsel_l = '1' else 1580;
-
-Ramp_osc: process(clk_6, pitch_bend)
-begin
-	if rising_edge(clk_6) then
-		saucer_ramp_count <= saucer_ramp_count + 1;
-		if saucer_ramp_count > saucer_ramp_term + ((Pitch_bend * PitchBendMult)) then
-			saucer_ramp_count <= 0;
-			saucer_snd <= (not saucer_snd);
-		end if;
-	end if;
-end process;	
-	
--- Turn the single-bit signals into larger values	
-saucrsnd <= "1110" when saucer_snd = '1' and saucrsnden = '1' else "0000";	
-lifesnd <= "1111" when clk_3k = '1' and lifeen = '1' else "0000";	
-
--- save off the values of the thumpfreq and thumpvol
-   p_thump_gen_reg : process(RESET_L,CLK_6)
-   begin
-    if (reset_l = '0') then
-      thumpfreq <= "0000";
-      thumpvol <= '0';
-    elsif rising_edge(CLK_6) then
-      if (ena_1_5M = '1') then
-        if (thump_l = '0') then
-          thumpfreq <= c_dout(3 downto 0);
-          thumpvol <= c_dout(4);
-        end if;
-      end if;
-    end if;
-
-  end process;
-  
-  -- generate a 100hz - thumpfreq frequency
-  
- Thump_Sound_gen: process
-  		constant Freq_tune : std_logic_vector(5 downto 0) := "011110"; -- Value from 0-100 used to tune the overall sound frequency
-  begin
-      wait until rising_edge(clk_3k);
-		-- we need to divide the 3k clock by 30 to get a 100hz sound
-		if (thump_count=0) then
-				thump_count<=Freq_tune+("00"&thumpfreq);
-				if (thumpvol='1') then
-						thumpsnd <= not thumpsnd;
-				else
-						thumpsnd<="0000";
-				end if;
-		else
-				thump_count<=thump_count-1;
-		end if;
-  end process;
+  tone3khz <= "1111" when clk_3k = '1' and aud(4) = '1' else "0000";
+  tone6khz <= "1111" when clk_6k = '1' and aud(5) = '1' else "0000";
+  t_e_vol  <= aud(2 downto 0);
+  shipthrusten <= aud(0) or aud(1) or aud(2);
   
   
-  Fire_Sound_gen : process
-   --constant decay : integer := 80; -- Value from used to tune the overall sound frequency
-   constant decay : integer := 210; -- Value from used to tune the overall sound frequency
- begin
-    --wait until rising_edge(CLK_6);
-    wait until rising_edge(ena_48k);
-				if (shpfireen='0') then
-					--shpfr_pitch    <= 4;
-					shpfr_pitch    <= 15;
-					shpfr_decay    <= decay;
-					shpfr_count    <=0;
-				else
-				   -- shpfr_count creates the wave
-					-- it starts at pitch, and decrements
-				   if (shpfr_count=0) then
-						-- each time it is 0, toggle the wave
-						firesnd <= not firesnd;
-						-- reset the counter
-						shpfr_count<=shpfr_pitch;
-						-- when we decay, then reset decay and increase the pitch
-					else
-						shpfr_count <= shpfr_count - 1;
-					end if;
-					if (shpfr_decay=0) then
-						shpfr_decay<=decay;
-						shpfr_pitch<=shpfr_pitch+1;
-					else
-						shpfr_decay<=shpfr_decay-1;
-					end if;
-				end if;
-  end process;
-  
-
-  SaucrFire_Sound_gen : process
-   constant decay : integer := 210; -- Value from 0-100 used to tune the overall sound frequency
- begin
-    --wait until rising_edge(CLK_6);
-    wait until rising_edge(ena_48k);
-				if (saucrfireen='0') then
-					--shpfr_pitch    <= 4;
-					saucrfr_pitch    <= 15;
-					saucrfr_decay    <= decay;
-					saucrfr_count    <=0;
-				else
-				   -- shpfr_count creates the wave
-					-- it starts at pitch, and decrements
-				   if (saucrfr_count=0) then
-						-- each time it is 0, toggle the wave
-						saucrfiresnd <= not saucrfiresnd;
-						-- reset the counter
-						saucrfr_count<=saucrfr_pitch;
-						-- when we decay, then reset decay and increase the pitch
-					else
-						saucrfr_count <= saucrfr_count - 1;
-					end if;
-					if (saucrfr_decay=0) then
-						saucrfr_decay<=decay;
-						saucrfr_pitch<=saucrfr_pitch+1;
-					else
-						saucrfr_decay<=saucrfr_decay-1;
-					end if;
-				end if;
-  end process;
-  
-
-	
-	
-	
-	
   -- LFSR to generate noise used in the ship thrust and explosion sounds
   p_noise_gen : process(RESET_L, CLK_6)
     variable shift_in : std_logic;
@@ -847,7 +732,7 @@ lifesnd <= "1111" when clk_3k = '1' and lifeen = '1' else "0000";
     -- simple low pass filter
     if (ena_3k = '1') then
       if (shpsnd_prefilter = '1') then
-        shpsnd_filter_t1 <= "1111";
+        shpsnd_filter_t1 <= t_e_vol & '0';--"1111";
       else
         shpsnd_filter_t1 <= "0000";
       end if;
@@ -868,9 +753,11 @@ lifesnd <= "1111" when clk_3k = '1' and lifeen = '1' else "0000";
       expaud  <= "0000";
     elsif rising_edge(CLK_6) then
       if (ena_1_5M = '1') then
-        if (explode_l = '0') then
-          expitch <= c_dout(7 downto 6);
-          expaud <= c_dout(5 downto 2);
+        if (aud(3) = '1') then
+          --expitch <= c_dout(7 downto 6);
+          --expaud <= c_dout(5 downto 2);
+          expitch <= "10";--c_dout(7 downto 6);
+          expaud <= t_e_vol& '0';--c_dout(5 downto 2);
         end if;
       end if;
     end if;
@@ -913,8 +800,7 @@ lifesnd <= "1111" when clk_3k = '1' and lifeen = '1' else "0000";
     wait until rising_edge(CLK_6);
 
 	 
-	 sum :=  ('0'&thumpsnd)+('0'&saucrfiresnd)+('0' & firesnd)+('0' & lifesnd) + ('0' & saucrsnd) + ("00" & expld_snd & "00") + ("00" & shpsnd_filtered);
-	 
+	 sum := ('0' & tone6khz)+ ('0' & tone3khz)+  ("00" & expld_snd & "00") + ("00" & shpsnd_filtered);
 
 
 --    if (sum(8) = '0') then

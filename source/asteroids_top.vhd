@@ -80,6 +80,8 @@ entity ASTEROIDS_TOP is
 	 VID_HBLANK			: out std_logic;
 	 VID_VBLANK			: out std_logic;
 
+	DIP					: in std_logic_vector(7 downto 0);
+	 
     RESET_L           : in    std_logic;
 
     -- ref clock in
@@ -164,6 +166,8 @@ begin
       BEAM_ON           => beam_on,
       BEAM_ENA          => beam_ena,
       --
+		DIP =>DIP,
+		--
       RESET_6_L         => reset_6_l,
       CLK_6             => clk_6,
 		clk_25				=> clk_25,

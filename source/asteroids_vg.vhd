@@ -518,7 +518,7 @@ port map
 --      );
 
 
-  p_memory_data_mux : process(vram1_t1_l, vram2_t1_l, vrom1_t1_l, vrom2_t1_l, ram_dout_1, ram_dout_2, rom_dout_1, rom_dout_2,rom_dout_3)
+  p_memory_data_mux : process(vram1_t1_l, vram2_t1_l, vrom1_t1_l, vrom2_t1_l, vrom3_t1_l,ram_dout_1, ram_dout_2, rom_dout_1, rom_dout_2,rom_dout_3)
   begin
     -- cpu buffer enabled when VMEM_L = 0
     memory_dout <= (others => '0');
