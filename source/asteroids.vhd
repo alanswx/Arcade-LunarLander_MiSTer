@@ -108,6 +108,7 @@ architecture RTL of ASTEROIDS is
   --
   signal nmi_count            : std_logic_vector(3 downto 0);
   -- addr decode
+  signal ram_we               : std_logic;
   signal zpage_l              : std_logic;
   signal vmem_l               : std_logic;
   signal pmem_l               : std_logic;
@@ -660,16 +661,26 @@ port map
   --
   -- main memory
   --
-  rams : entity work.ASTEROIDS_RAM
-    port map (
-      ADDR   => ram_addr(9 downto 0),
-      DIN    => c_dout,
-      DOUT   => ram_dout,
-      RW_L   => c_rw_l,
-      CS_L   => zpage_l,
-      ENA    => ena_1_5M,
-      CLK    => CLK_6
-      );
+ram_we <= (not zpage_l) and (not c_rw_l) and ena_1_5M;
+  RAM: Entity work.RAM256
+port map(
+    clock => clk_6,
+    address => c_addr(7 downto 0),
+    data => c_dout,
+    wren => ram_we,
+    q => ram_dout
+    );
+
+--  rams : entity work.ASTEROIDS_RAM
+--    port map (
+--      ADDR   => ram_addr(9 downto 0),
+--      DIN    => c_dout,
+--      DOUT   => ram_dout,
+--      RW_L   => c_rw_l,
+--      CS_L   => zpage_l,
+--      ENA    => ena_1_5M,
+--      CLK    => CLK_6
+--      );
   
   p_cpu_data_mux : process(c_addr, ram_dout, rom_dout, vg_dout, zpage_l, pmem_l, vmem_l,
                            sinp0_l, control_ip0_sel, sinp1_l, control_ip1_sel,

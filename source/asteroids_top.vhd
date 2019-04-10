@@ -111,6 +111,7 @@ architecture RTL of ASTEROIDS_TOP is
 
   signal x_vector             : std_logic_vector(9 downto 0);
   signal y_vector             : std_logic_vector(9 downto 0);
+  signal y_vector_w_offset             : std_logic_vector(9 downto 0);
   signal z_vector             : std_logic_vector(3 downto 0);
   signal beam_on              : std_logic;
   signal beam_ena             : std_logic;
@@ -176,6 +177,8 @@ begin
 		dn_wr					=> dn_wr				
       );
 
+	y_vector_w_offset<= y_vector+100;
+		
   u_DW : entity work.ASTEROIDS_DW
     port map (
       RESET            => reset_6,
@@ -183,7 +186,7 @@ begin
 		clk_6					=> clk_6,
 
       X_VECTOR         => x_vector,
-      Y_VECTOR         => y_vector,
+      Y_VECTOR         => y_vector_w_offset,-- AJS move up y_vector,
       Z_VECTOR         => z_vector,
 
       BEAM_ON          => beam_on,
