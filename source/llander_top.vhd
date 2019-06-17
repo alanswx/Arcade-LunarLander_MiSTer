@@ -178,6 +178,7 @@ begin
   LLander: entity work.llander 
 port map(
 		clk_6 => clk_6,
+		clk_25 => clk_25,
 		reset_6_l => reset_6_l,
 		dip => x"00",
 		rot_left_l => rot_left_l,
@@ -202,31 +203,15 @@ port map(
 		y_vector => y_vector,
 		z_vector => z_vector,
 		beam_on => beam_on,
-      BEAM_ENA          => beam_ena
+      BEAM_ENA  => beam_ena,
+		dn_addr => dn_addr,
+		dn_data =>dn_data,
+		dn_wr=>dn_wr
+
 		);
 	
   
---  u_asteroids : entity work.LLANDER
---    port map (
---	   SELF_TEST_SWITCH_L => SELF_TEST_SWITCH_L,
---      BUTTON            => BUTTON,
---      AUDIO_OUT         => AUDIO_OUT,
---
---      X_VECTOR          => x_vector,
---      Y_VECTOR          => y_vector,
---      Z_VECTOR          => z_vector,
---      BEAM_ON           => beam_on,
---      BEAM_ENA          => beam_ena,
---      --
---		DIP =>DIP,
---		--
---      RESET_6_L         => reset_6_l,
---      CLK_6             => clk_6,
---		clk_25				=> clk_25,
---		dn_addr          	=> dn_addr, 
---		dn_data         	=> dn_data,
---		dn_wr					=> dn_wr				
---      );
+
 
 	y_vector_w_offset<= y_vector+100;
 		

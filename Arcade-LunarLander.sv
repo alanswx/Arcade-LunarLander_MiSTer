@@ -137,6 +137,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.joystick_0(joy_0),
 	.joystick_1(joy_1),
+	.joystick_analog_0(analog_joy_0),
 	.ps2_key(ps2_key)
 );
 
@@ -148,21 +149,21 @@ always @(posedge clk_25) begin
 	
 	if(old_state != ps2_key[10]) begin
 		casex(code)
-			'h03a: btn_fire         <= pressed; // M
+			//'h03a: btn_fire         <= pressed; // M
 			'h005: btn_one_player   <= pressed; // F1
 			'h006: btn_two_players  <= pressed; // F2
 			'h01C: btn_left      	<= pressed; // A
 			'h023: btn_right      	<= pressed; // D
 			'h004: btn_coin  			<= pressed; // F3
-			'h04b: btn_thrust  			<= pressed; // L
-			'h042: btn_shield  			<= pressed; // K
+			//'h04b: btn_thrust  			<= pressed; // L
+			//'h042: btn_shield  			<= pressed; // K
 //			'hX75: btn_up          <= pressed; // up
 //			'hX72: btn_down        <= pressed; // down
 			'hX6B: btn_left        <= pressed; // left
 			'hX74: btn_right       <= pressed; // right
-			'h014: btn_fire        <= pressed; // ctrl
-			'h011: btn_thrust      <= pressed; // Lalt
-			'h029: btn_shield      <= pressed; // space
+			'h014: btn_abort       <= pressed; // ctrl
+			'h011: btn_select      <= pressed; // Lalt
+			'h029: btn_gselect      <= pressed; // space
 			// JPAC/IPAC/MAME Style Codes
 			'h016: btn_start_1     <= pressed; // 1
 			'h02E: btn_coin        <= pressed; // 5
@@ -176,42 +177,16 @@ reg btn_right = 0;
 reg btn_left = 0;
 reg btn_one_player = 0;
 reg btn_two_players = 0;
-reg btn_fire = 0;
+reg btn_abort = 0;
 reg btn_coin = 0;
-reg btn_thrust = 0;
-reg btn_shield = 0;
+reg btn_select = 0;
+reg btn_gselect =0;
+//reg btn_fire = 0;
+//reg btn_shield = 0;
 reg btn_start_1=0;
 
-wire [7:0] BUTTONS = {~btn_right & ~joy[0],~btn_left & ~joy[1],~(btn_one_player|btn_start_1) & ~joy[7],~btn_two_players,~btn_fire & ~joy[4],~btn_coin & ~joy[7],~btn_thrust & ~joy[5],~btn_shield & ~joy[6]};
 wire hblank, vblank;
-/*
-wire hs, vs;
-wire [2:0] r,g;
-wire [2:0] b;
 
-reg ce_pix;
-always @(posedge clk_24) begin
-        reg old_clk;
-
-        old_clk <= clk_6;
-        ce_pix <= old_clk & ~clk_6;
-end
-
-arcade_fx #(640,9) arcade_video
-(
-        .*,
-
-        .clk_video(clk_24),
-
-        .RGB_in({r,g,b}),
-        .HBlank(hblank),
-        .VBlank(vblank),
-        .HSync(~hs),
-        .VSync(~vs),
-
-        .fx(status[5:3])
-);
-*/
 wire ce_vid = 1; 
 wire hs, vs;
 wire [2:0] r,g;
@@ -243,17 +218,38 @@ wire [7:0] audio;
 assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
-wire [1:0] lang = 2'b00;
-wire [1:0] ships = 2'b00;
 wire vgade;
+wire [15:0] analog_joy_0;
+//wire [7:0] joyx=8'd255-($signed(analog_joy_0[7:0])+8'd128); 
+//wire [7:0] joyy=8'd255-($signed(analog_joy_0[15:8])+8'd128); 
+//wire [7:0] joyx=analog_joy_0[7:0]; 
+//wire [7:0] joyy=analog_joy_0[15:8]; 
 
-ASTEROIDS_TOP ASTEROIDS_TOP
+wire signed [7:0] signedjoy = analog_joy_0[15:8];
+wire [8:0] us_joy = 8'd255 - (signedjoy + 9'd128);
+//wire [7:0] joyy = us_joy[7:0];
+//wire [7:0] joyy = 8'b01111111;
+
+LLANDER_TOP LLANDER_TOP
 (
+		.ROT_LEFT_L(~btn_left & ~joy[1]),
+		.ROT_RIGHT_L(~btn_right & ~joy[0]),
+		.ABORT_L(btn_abort),
+		.GAME_SEL_L(btn_gselect),
+		.START_L(~(btn_one_player|btn_start_1) & ~joy[7]),
+		.COIN1_L(~btn_coin & ~joy[7]),
+		.COIN2_L(~btn_coin & ~joy[7]),
+		.THRUST(us_joy),
+		.DIAG_STEP_L(m_diag_step),
+		.SLAM_L(m_slam),
+		.SELF_TEST_L(~status[7]), 
+		.START_SEL_L(btn_select),
+		.LAMP2(lamp2),
+		.LAMP3(lamp3),
+		.LAMP4(lamp4),
+		.LAMP5(lamp5),
 
-	.BUTTON(BUTTONS),
-	.SELF_TEST_SWITCH_L(~status[7]), 
-	.LANG(lang),
-	.SHIPS(ships),
+
 	.AUDIO_OUT(audio),
 	.dn_addr(ioctl_addr[15:0]),
 	.dn_data(ioctl_dout),

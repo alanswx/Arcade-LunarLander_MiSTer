@@ -70,7 +70,13 @@ entity LLANDER_VG is
     ENA_1_5M     : in    std_logic;
     ENA_1_5M_E   : in    std_logic;
     RESET_L      : in    std_logic;
-    CLK_6        : in    std_logic 
+    CLK_6        : in    std_logic;
+	 Clk_25       : in    std_logic;
+ 	 dn_addr      : in 	std_logic_vector(15 downto 0);
+	 dn_data      : in 	std_logic_vector(7 downto 0);
+	 dn_wr			: in 	std_logic	;
+	 rom_v_cs     : in  std_logic
+	 
     );
 end;
 
@@ -464,27 +470,66 @@ begin
     );
 
 
+rom_v_0_cs <= '1' when dn_addr(12 downto 11) = "00"     else '0';
+rom_v_1_cs <= '1' when dn_addr(12 downto 11) = "01"     else '0';
+rom_v_2_cs <= '1' when dn_addr(12 downto 11) = "10"     else '0';
 
-  R3 : entity work.LLANDER_VEC_ROM1
-    port map (
-      clock    => CLK_6,
-      address  => am_bus(10 downto 0),
-      q        => rom_dout_1
-      );
+u_vector_rom_0 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_v_cs and rom_v_0_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
 
-  NP3 : entity work.LLANDER_VEC_ROM2
-    port map (
-      clock    => CLK_6,
-      address  => am_bus(10 downto 0),
-      q        => rom_dout_2
-      );
-		
-  M3 : entity work.LLANDER_VEC_ROM3
-    port map (
-      clock    => CLK_6,
-      address  => am_bus(10 downto 0),
-      q        => rom_dout_3
-      );
+	clock_b   => CLK_6,
+	address_b => am_bus(10 downto 0),
+	q_b       => rom_dout_1
+);
+u_vector_rom_1 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_v_cs and rom_v_1_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => am_bus(10 downto 0),
+	q_b       => rom_dout_2
+);
+u_vector_rom_2 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_v_cs and rom_v_2_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => am_bus(10 downto 0),
+	q_b       => rom_dout_3
+);
+--  R3 : entity work.LLANDER_VEC_ROM1
+--    port map (
+--      clock    => CLK_6,
+--      address  => am_bus(10 downto 0),
+--      q        => rom_dout_1
+--      );
+--
+--  NP3 : entity work.LLANDER_VEC_ROM2
+--    port map (
+--      clock    => CLK_6,
+--      address  => am_bus(10 downto 0),
+--      q        => rom_dout_2
+--      );
+--		
+--  M3 : entity work.LLANDER_VEC_ROM3
+--    port map (
+--      clock    => CLK_6,
+--      address  => am_bus(10 downto 0),
+--      q        => rom_dout_3
+--      );
 
 
 

@@ -52,6 +52,7 @@ use ieee.std_logic_unsigned.all;
 entity LLander is
 	port (
 		CLK_6             : in	std_logic;
+		CLK_25            : in	std_logic;
 		RESET_6_L         : in	std_logic;
 		--
 		DIP					: in 	std_logic_vector(7 downto 0);
@@ -83,7 +84,12 @@ entity LLander is
 		Y_VECTOR 			: out std_logic_vector(9 downto 0);
 		Z_VECTOR				: out std_logic_vector(3 downto 0);
 		BEAM_ON   			: out std_logic;
-		BEAM_ENA   			: out std_logic
+		BEAM_ENA   			: out std_logic;
+
+ 	 dn_addr           : in 	std_logic_vector(15 downto 0);
+	 dn_data         	 : in 	std_logic_vector(7 downto 0);
+	 dn_wr				 : in 	std_logic	
+
 		);
 end;
 
@@ -190,7 +196,16 @@ architecture RTL of LLander is
   signal rom_3_cs					: std_logic;
   signal rom_v_cs					: std_logic;
   
+  
 begin
+
+rom_0_cs <= '1' when dn_addr(13 downto 11) = "000"     else '0';
+rom_1_cs <= '1' when dn_addr(13 downto 11) = "001"     else '0';
+rom_2_cs <= '1' when dn_addr(13 downto 11) = "010"     else '0';
+rom_3_cs <= '1' when dn_addr(13 downto 11) = "011"     else '0';
+rom_v_cs <= '1' when dn_addr(13) = '1'     else '0';
+--rom_prom_cs <= '1' when dn_addr(13 downto 11) = "100"     else '0';
+
 
   p_ena : process -- clock divider
   begin
@@ -434,35 +449,83 @@ begin
     end case;
   end process;
 
+rom0 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_0_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => c_addr(10 downto 0),
+	q_b       => rom0_dout
+);	  
+rom1 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_1_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => c_addr(10 downto 0),
+	q_b       => rom1_dout
+);	  
+rom2 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_2_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => c_addr(10 downto 0),
+	q_b       => rom2_dout
+);	  
+rom3 : work.dpram generic map (11,8)
+port map
+(
+	clock_a   => Clk_25,
+	wren_a    => dn_wr and rom_3_cs,
+	address_a => dn_addr(10 downto 0),
+	data_a    => dn_data,
+
+	clock_b   => CLK_6,
+	address_b => c_addr(10 downto 0),
+	q_b       => rom3_dout
+);	  
 
 --  Internal program ROMs if the FPGA is big enough	
-  rom0 : entity work.LLANDER_PROG_ROM_0
-    port map (
-      address    	=> c_addr(10 downto 0),
-      q        	=> rom0_dout,
-      clock       => CLK_6
-      );
-
-  rom1 : entity work.LLANDER_PROG_ROM_1
-    port map (
-      address     => c_addr(10 downto 0),
-      q        	=> rom1_dout,
-      clock       => CLK_6
-      );
-
-  rom2 : entity work.LLANDER_PROG_ROM_2
-    port map (
-      address     => c_addr(10 downto 0),
-      q        	=> rom2_dout,
-      clock       => CLK_6
-      );
-
-  rom3 : entity work.LLANDER_PROG_ROM_3
-    port map (
-      address     => c_addr(10 downto 0),
-      q        	=> rom3_dout,
-      clock       => CLK_6
-      );
+--  rom0 : entity work.LLANDER_PROG_ROM_0
+--    port map (
+--      address    	=> c_addr(10 downto 0),
+--      q        	=> rom0_dout,
+--      clock       => CLK_6
+--      );
+--
+--  rom1 : entity work.LLANDER_PROG_ROM_1
+--    port map (
+--      address     => c_addr(10 downto 0),
+--      q        	=> rom1_dout,
+--      clock       => CLK_6
+--      );
+--
+--  rom2 : entity work.LLANDER_PROG_ROM_2
+--    port map (
+--      address     => c_addr(10 downto 0),
+--      q        	=> rom2_dout,
+--      clock       => CLK_6
+--      );
+--
+--  rom3 : entity work.LLANDER_PROG_ROM_3
+--    port map (
+--      address     => c_addr(10 downto 0),
+--      q        	=> rom3_dout,
+--      clock       => CLK_6
+--      );
 
 --
   p_rom_mux : process(c_addr, rom0_dout, rom1_dout, rom2_dout, rom3_dout)
@@ -633,7 +696,13 @@ end process;
       ENA_1_5M     => ena_1_5m,
       ENA_1_5M_E   => ena_1_5m_e,
       RESET_L      => reset_l,
-      CLK_6        => CLK_6
+      CLK_6        => CLK_6,
+		CLK_25       => CLK_25,
+		dn_addr      => dn_addr, 
+		dn_data      => dn_data,
+		dn_wr			 => dn_wr,			
+		rom_v_cs     => rom_v_cs
+		
       );
 
   BEAM_ENA <= ena_1_5m;
