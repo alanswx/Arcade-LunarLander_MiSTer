@@ -369,22 +369,8 @@ set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 
 
 set_global_assignment -name VHDL_FILE source/asteroids_dw.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_VEC_ROM3.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_VEC_ROM2.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_VEC_ROM1.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_PROG_ROM_3.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_PROG_ROM_2.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_PROG_ROM_1.vhd
-set_global_assignment -name VHDL_FILE source/altera/LLANDER_PROG_ROM_0.vhd
 set_global_assignment -name VHDL_FILE source/altera/ram_1k.vhd
 set_global_assignment -name QIP_FILE source/altera/RAM256.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_VEC_ROM3.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_VEC_ROM2.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_VEC_ROM1.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_PROG_ROM_3.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_PROG_ROM_1.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_PROG_ROM_2.qip
-set_global_assignment -name QIP_FILE source/altera/LLANDER_PROG_ROM_0.qip
 set_global_assignment -name QIP_FILE source/altera/clk_pll.qip
 set_global_assignment -name SYSTEMVERILOG_FILE "Arcade-LunarLander.sv"
 set_global_assignment -name CDF_FILE jtag.cdf
