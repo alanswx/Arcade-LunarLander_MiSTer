@@ -70,15 +70,17 @@ localparam CONF_STR = {
 	"A.LLANDER;;",
 	"F,rom;", // allow loading of alternate ROMs
 	"-;",
+	"OD,Thruster,Analog Stick,D-Pad;",
+	"-;",
 	"O1,Aspect Ratio,Original,Wide;",
-//	"O2,Orientation,Vert,Horz;",
-	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",  
-	"O7,Test,Off,On;", 
+	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
+	"O7,Test,Off,On;",
 	"O89,Language,English,Spanish,French,German;",
 	"OAC,Fuel,450,600,750,900,1100,1300,1550,1800;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Thrust,Hyperspace,Start;",	
+	"J1,Start,Select,Coin,Abort,Turn Right,Turn Left;",	
 	"V,v",`BUILD_DATE
 };
 // 00010000
@@ -152,22 +154,20 @@ always @(posedge clk_25) begin
 			//'h03a: btn_fire         <= pressed; // M
 			'h005: btn_one_player   <= pressed; // F1
 			'h006: btn_two_players  <= pressed; // F2
-			'h01C: btn_left      	<= pressed; // A
-			'h023: btn_right      	<= pressed; // D
-			'h004: btn_coin  			<= pressed; // F3
-			//'h04b: btn_thrust  			<= pressed; // L
-			//'h042: btn_shield  			<= pressed; // K
+			'h01C: btn_left         <= pressed; // A
+			'h023: btn_right        <= pressed; // D
+			'h004: btn_coin         <= pressed; // F3
 //			'hX75: btn_up          <= pressed; // up
 //			'hX72: btn_down        <= pressed; // down
-			'hX6B: btn_left        <= pressed; // left
-			'hX74: btn_right       <= pressed; // right
-			'h014: btn_abort       <= pressed; // ctrl
-			'h011: btn_select      <= pressed; // Lalt
+			'hX6B: btn_left         <= pressed; // left
+			'hX74: btn_right        <= pressed; // right
+			'h014: btn_abort        <= pressed; // ctrl
+			'h011: btn_select       <= pressed; // Lalt
 			'h029: btn_gselect      <= pressed; // space
 			// JPAC/IPAC/MAME Style Codes
-			'h016: btn_start_1     <= pressed; // 1
-			'h02E: btn_coin        <= pressed; // 5
-			'h036: btn_coin        <= pressed; // 6
+			'h016: btn_start_1      <= pressed; // 1
+			'h02E: btn_coin         <= pressed; // 5
+			'h036: btn_coin         <= pressed; // 6
 			
 		endcase
 	end
@@ -181,8 +181,6 @@ reg btn_abort = 0;
 reg btn_coin = 0;
 reg btn_select = 0;
 reg btn_gselect =0;
-//reg btn_fire = 0;
-//reg btn_shield = 0;
 reg btn_start_1=0;
 
 wire hblank, vblank;
@@ -192,14 +190,61 @@ wire hs, vs;
 wire [2:0] r,g;
 wire [2:0] b;
 
+ovo #(.COLS(1), .LINES(1), .RGB(24'hFF00FF)) diff (
+	.i_r({r,r,r[2:1]}),
+	.i_g({g,g,g[2:1]}),
+	.i_b({b,b,b[2:1]}),
+	.i_hs(~hs),
+	.i_vs(~vs),
+	.i_de(vgade),
+	.i_en(ce_vid),
+	.i_clk(clk_25),
+
+	.o_r(VGA_R),
+	.o_g(VGA_G),
+	.o_b(VGA_B),
+	.o_hs(VGA_HS),
+	.o_vs(VGA_VS),
+	.o_de(VGA_DE),
+
+	.ena(diff_count > 0),
+
+	.in0(difficulty),
+	.in1(),
+);
+
+wire lamp2, lamp3, lamp4, lamp5;
+
+wire [1:0] difficulty;
+
+always_comb begin
+	if(lamp5)
+		difficulty = 2'd3;
+	else if(lamp4)
+		difficulty = 2'd2;
+	else if(lamp3)
+		difficulty = 2'd1;
+	else
+		difficulty = 2'd0;
+end
+
+int diff_count = 0;
+always @(posedge CLK_50M) begin
+	if (diff_count > 0)
+		diff_count <= diff_count - 1;
+	
+	if (~in_select)
+		diff_count <= 'd500_000_000; // 10 seconds
+end
+
 assign VGA_CLK  = clk_25; 
 assign VGA_CE   = ce_vid;
-assign VGA_R    = {r,r,r[2:1]};
-assign VGA_G    = {g,g,g[2:1]};
-assign VGA_B    = {b,b,b[2:1]};
-assign VGA_HS   = ~hs;
-assign VGA_VS   = ~vs;
-assign VGA_DE   = vgade;
+// assign VGA_R    = {r,r,r[2:1]};
+// assign VGA_G    = {g,g,g[2:1]};
+// assign VGA_B    = {b,b,b[2:1]};
+// assign VGA_HS   = ~hs;
+// assign VGA_VS   = ~vs;
+// assign VGA_DE   = vgade;
 
 assign HDMI_CLK = VGA_CLK;
 assign HDMI_CE  = VGA_CE;
@@ -209,46 +254,80 @@ assign HDMI_B   = VGA_B ;
 assign HDMI_DE  = VGA_DE;
 assign HDMI_HS  = VGA_HS;
 assign HDMI_VS  = VGA_VS;
-//assign HDMI_SL  = status[2] ? 2'd0   : status[4:3];
 assign HDMI_SL  = 2'd0;
 
 
-wire reset = (RESET | status[0] |  buttons[1] | ioctl_download);
+wire reset = (RESET | status[0] | buttons[1] | ioctl_download);
 wire [7:0] audio;
 assign AUDIO_L = {audio, audio};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 wire vgade;
 wire [15:0] analog_joy_0;
-//wire [7:0] joyx=8'd255-($signed(analog_joy_0[7:0])+8'd128); 
-//wire [7:0] joyy=8'd255-($signed(analog_joy_0[15:8])+8'd128); 
-//wire [7:0] joyx=analog_joy_0[7:0]; 
-//wire [7:0] joyy=analog_joy_0[15:8]; 
 
 wire signed [7:0] signedjoy = analog_joy_0[15:8];
-wire [8:0] us_joy = 8'd255 - (signedjoy + 9'd128);
-//wire [7:0] joyy = us_joy[7:0];
-//wire [7:0] joyy = 8'b01111111;
+wire signed [7:0] signedturn = analog_joy_0[7:0];
+wire [8:0] us_joy = 9'sd255 - (signedjoy + 9'sd128);
+
+
+// According to mame, because of the way the DAC worked for the thrust lever,
+// it was unlikely that the board ever expected to get 0xFF, so we limit to 0xFE.
+wire [8:0] us_joy_mod = us_joy > 9'd254 ? 9'd254 : us_joy;
+
+reg [7:0] dpad_thrust = 0;
+
+// 1 second = 50,000,000 cycles (duh)
+// If we want to go from zero to full throttle in 1 second we tick every
+// 196,850 cycles.
+always @(posedge CLK_50M) begin :thrust_count
+	int thrust_count;
+	thrust_count <= thrust_count + 1'd1;
+
+	if (thrust_count == 'd196_850) begin
+		thrust_count <= 0;
+		if (joy[2] && dpad_thrust > 0)
+			dpad_thrust <= dpad_thrust - 1'd1;
+
+		if (joy[3] && dpad_thrust < 'd254)
+			dpad_thrust <= dpad_thrust + 1'd1;
+	end
+end
+
+wire joy_turn_l = (signedturn < -8'sd64);
+wire joy_turn_r = (signedturn > 8'sd64);
+
+//4     5      6    7     8          9
+//Start,Select,Coin,Abort,Turn Right,Turn Left
+
+wire in_select = ~(joy[5] | btn_gselect);
+wire in_start  = ~(joy[4] | btn_one_player | btn_start_1);
+wire in_turn_l = ~(joy[9] | joy[1] | btn_left | joy_turn_l);
+wire in_turn_r = ~(joy[8] | joy[0] | btn_right | joy_turn_r);
+wire in_coin   = ~(joy[6] | btn_coin);
+wire in_abort  = ~(joy[7] | btn_abort);
+
+wire [7:0] in_thrust = status[13] ? dpad_thrust : us_joy_mod;
+
+wire is_starting;
 
 LLANDER_TOP LLANDER_TOP
 (
-		.ROT_LEFT_L(~btn_left & ~joy[1]),
-		.ROT_RIGHT_L(~btn_right & ~joy[0]),
-		.ABORT_L(btn_abort),
-		.GAME_SEL_L(btn_gselect),
-		.START_L(~(btn_one_player|btn_start_1) & ~joy[7]),
-		.COIN1_L(~btn_coin & ~joy[7]),
-		.COIN2_L(~btn_coin & ~joy[7]),
-		.THRUST(us_joy),
-		.DIAG_STEP_L(m_diag_step),
-		.SLAM_L(m_slam),
-		.SELF_TEST_L(~status[7]), 
-		.START_SEL_L(btn_select),
-		.LAMP2(lamp2),
-		.LAMP3(lamp3),
-		.LAMP4(lamp4),
-		.LAMP5(lamp5),
-
+	.ROT_LEFT_L(in_turn_l),
+	.ROT_RIGHT_L(in_turn_r),
+	.ABORT_L(in_abort),
+	.GAME_SEL_L(in_select),
+	.START_L(in_start),
+	.COIN1_L(in_coin),
+	.COIN2_L(in_coin),
+	.THRUST(in_thrust),
+	.DIAG_STEP_L(m_diag_step),
+	.SLAM_L(m_slam),
+	.SELF_TEST_L(~status[7]), 
+	.START_SEL_L(is_starting),
+	.LAMP2(lamp2),
+	.LAMP3(lamp3),
+	.LAMP4(lamp4),
+	.LAMP5(lamp5),
 
 	.AUDIO_OUT(audio),
 	.dn_addr(ioctl_addr[15:0]),
