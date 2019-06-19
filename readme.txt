@@ -1,13 +1,16 @@
-This is a Model of Asteroids hardware adapted from Asteroids Deluxe by James Sweet.
+This is a Model of LunarLander hardware adapted from Asteroids by James Sweet.
 
 -- Keyboard players inputs :
 --
-   F1          : Coin + Start 1P
-   F2          : Coin + Start 2P
-   LEFT,RIGHT,UP,DOWN  arrows : Steering
-   Space: Hyperspace
-   Ctrl,M  : Fire
-   LAlt: Thrust
+   F1          : Start 1P
+   F2          : Start 2P
+   F3          : Coin 
+   LEFT,RIGHT arrows : Steering
+   A,D : Steering
+   UP,DOWN arrows : Thrust
+   Ctrl  : Abort
+   LAlt: Select
+   Space: game select
 
    MAME/IPAC/JPAC Style Keyboard inputs:
      5           : Coin 1
@@ -15,7 +18,8 @@ This is a Model of Asteroids hardware adapted from Asteroids Deluxe by James Swe
      1           : Start 1 Player
      2           : Start 1 Player
 
--- Joystick support.
+
+-- Joystick support.  Analog or Digital - select in OSD
 
 -- OSD language selection
 
