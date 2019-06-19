@@ -157,8 +157,8 @@ always @(posedge clk_25) begin
 			'h01C: btn_left         <= pressed; // A
 			'h023: btn_right        <= pressed; // D
 			'h004: btn_coin         <= pressed; // F3
-//			'hX75: btn_up          <= pressed; // up
-//			'hX72: btn_down        <= pressed; // down
+			'hX75: btn_up          <= pressed; // up
+			'hX72: btn_down        <= pressed; // down
 			'hX6B: btn_left         <= pressed; // left
 			'hX74: btn_right        <= pressed; // right
 			'h014: btn_abort        <= pressed; // ctrl
@@ -175,6 +175,8 @@ end
 
 reg btn_right = 0;
 reg btn_left = 0;
+reg btn_up = 0;
+reg btn_down = 0;
 reg btn_one_player = 0;
 reg btn_two_players = 0;
 reg btn_abort = 0;
@@ -285,10 +287,10 @@ always @(posedge CLK_50M) begin :thrust_count
 
 	if (thrust_count == 'd196_850) begin
 		thrust_count <= 0;
-		if (joy[2] && dpad_thrust > 0)
+		if ((joy[2]|btn_up) && dpad_thrust > 0)
 			dpad_thrust <= dpad_thrust - 1'd1;
 
-		if (joy[3] && dpad_thrust < 'd254)
+		if ((joy[3]|btn_down) && dpad_thrust < 'd254)
 			dpad_thrust <= dpad_thrust + 1'd1;
 	end
 end
